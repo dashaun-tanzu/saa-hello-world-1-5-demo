@@ -2,7 +2,7 @@
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 
-[![asciicast](https://asciinema.org/a/739198.svg)](https://asciinema.org/a/739198)
+![Demo](demo.gif)
 
 # Spring Application Advisor Upgrade Example
 
