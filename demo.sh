@@ -5,8 +5,11 @@ DEMO_START=$(date +%s)
 TEMP_DIR="upgrade-example"
 
 # Java version configuration
-JAVA8_VERSION="8.0.462-librca"
-JAVA17_VERSION="17.0.16-librca"
+JAVA8_VERSION="8.0.472-librca"
+JAVA21_VERSION="21.0.9-librca"
+
+SPRING_ADVISOR_MAPPING_CUSTOM_0_GIT_URI="https://github.com/dashaun-tanzu/advisor-mappings.git"
+SPRING_ADVISOR_MAPPING_CUSTOM_0_GIT_PATH="mappings/"
 
 # Function to check if a command exists
 check_dependency() {
@@ -104,11 +107,11 @@ function initSDKman() {
     echo "Java $JAVA8_VERSION already installed."
   fi
   
-  if ! check_java_installed "$JAVA17_VERSION"; then
-    echo "Installing Java $JAVA17_VERSION..."
-    sdk install java "$JAVA17_VERSION"
+  if ! check_java_installed "$JAVA21_VERSION"; then
+    echo "Installing Java $JAVA21_VERSION..."
+    sdk install java "$JAVA21_VERSION"
   else
-    echo "Java $JAVA17_VERSION already installed."
+    echo "Java $JAVA21_VERSION already installed."
   fi
 }
 
@@ -127,10 +130,10 @@ function useJava8 {
   pei "java -version"
 }
 
-# Switch to Java 17 and display version
-function useJava17 {
-  displayMessage "Switch to Java 17 for Spring Boot 3"
-  pei "sdk use java $JAVA17_VERSION"
+# Switch to Java 21 and display version
+function useJava21 {
+  displayMessage "Switch to Java 21 for Spring Boot 3"
+  pei "sdk use java $JAVA21_VERSION"
   pei "java -version"
 }
 
@@ -216,6 +219,7 @@ function advisorUpgradePlanGet {
 function advisorUpgradePlanApplySquash {
   displayMessage "Do all the upgrades!"
   pei "advisor upgrade-plan apply --squash 16"
+  pei "mvn -q -U org.openrewrite.maven:rewrite-maven-plugin:run -Drewrite.recipeArtifactCoordinates=org.openrewrite.recipe:rewrite-spring:RELEASE -Drewrite.activeRecipes=org.openrewrite.java.spring.boot4.UpgradeSpringBoot_4_0 -Drewrite.exportDatatables=true"
 }
 
 # Display a message with a header
@@ -247,12 +251,12 @@ function statsSoFarTableColored {
   START1=$(startupTime 'java8with1.5.log')
   printf "${RED}%-35s %-25s %-15s %s${NC}\n" "Spring Boot 1.5 with Java 8" "$START1" "$MEM1" "-"
 
-  # Spring Boot 3.5 with Java17 (Green - improved)
-  MEM2=$(cat java17with3.5.log2)
+  # Spring Boot 3.5 with Java21 (Green - improved)
+  MEM2=$(cat java21with3.5.log2)
   PERC2=$(bc <<< "scale=2; 100 - ${MEM2}/${MEM1}*100")
-  START2=$(startupTime 'java17with3.5.log')
+  START2=$(startupTime 'java21with3.5.log')
   PERCSTART2=$(bc <<< "scale=2; 100 - ${START2}/${START1}*100")
-  printf "${GREEN}%-35s %-25s %-15s %s ${NC}\n" "Spring Boot 3.5 with Java 17" "$START2 ($PERCSTART2% faster)" "$MEM2" "$PERC2%"
+  printf "${GREEN}%-35s %-25s %-15s %s ${NC}\n" "Spring Boot 4.0 with Java 21" "$START2 ($PERCSTART2% faster)" "$MEM2" "$PERC2%"
 
   echo -e "${WHITE}--------------------------------------------------------------------------------------------${NC}"
   DEMO_STOP=$(date +%s)
@@ -293,15 +297,15 @@ showBuildConfigTools
 talkingPoint
 advisorUpgradePlanGet
 talkingPoint
+useJava21
+talkingPoint
 advisorUpgradePlanApplySquash
 talkingPoint
-useJava17
-talkingPoint
-springBootStart java17with3.5.log
+springBootStart java21with3.5.log
 talkingPoint
 validateApp
 talkingPoint
-showMemoryUsage "$(jps | grep 'HelloSpringApplication' | cut -d ' ' -f 1)" java17with3.5.log2
+showMemoryUsage "$(jps | grep 'HelloSpringApplication' | cut -d ' ' -f 1)" java21with3.5.log2
 talkingPoint
 springBootStop
 talkingPoint
