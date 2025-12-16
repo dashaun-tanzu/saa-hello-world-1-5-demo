@@ -218,8 +218,7 @@ function advisorUpgradePlanGet {
 
 function advisorUpgradePlanApplySquash {
   displayMessage "Do all the upgrades!"
-  pei "advisor upgrade-plan apply --squash 16"
-  pei "mvn -q -U org.openrewrite.maven:rewrite-maven-plugin:run -Drewrite.recipeArtifactCoordinates=org.openrewrite.recipe:rewrite-spring:RELEASE -Drewrite.activeRecipes=org.openrewrite.java.spring.boot4.UpgradeSpringBoot_4_0 -Drewrite.exportDatatables=true"
+  pei "advisor upgrade-plan apply --squash 17"
 }
 
 # Display a message with a header
