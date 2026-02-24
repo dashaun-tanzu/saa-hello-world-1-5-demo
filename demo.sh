@@ -5,8 +5,8 @@ DEMO_START=$(date +%s)
 TEMP_DIR="upgrade-example"
 
 # Java version configuration
-JAVA8_VERSION="8.0.472-librca"
-JAVA21_VERSION="21.0.9-librca"
+JAVA8_VERSION="8.0.482-librca"
+JAVA21_VERSION="21.0.10-librca"
 
 SPRING_ADVISOR_MAPPING_CUSTOM_0_GIT_URI="https://github.com/dashaun-tanzu/advisor-mappings.git"
 SPRING_ADVISOR_MAPPING_CUSTOM_0_GIT_PATH="mappings/"
