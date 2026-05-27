@@ -4,9 +4,15 @@ DEMO_START=$(date +%s)
 
 TEMP_DIR="upgrade-example"
 
-# Java version configuration
-JAVA8_VERSION="8.0.482-librca"
-JAVA21_VERSION="21.0.10-librca"
+# Java versions are sourced from .sdkmanrc (one `java=<version>` line per major).
+SDKMANRC="$(dirname "$0")/.sdkmanrc"
+JAVA8_VERSION=$(grep  '^java=8\.'  "$SDKMANRC" | cut -d'=' -f2)
+JAVA21_VERSION=$(grep '^java=21\.' "$SDKMANRC" | cut -d'=' -f2)
+
+if [[ -z "$JAVA8_VERSION" || -z "$JAVA21_VERSION" ]]; then
+  echo "Missing java= entry in $SDKMANRC (need both Java 8 and Java 21)."
+  exit 1
+fi
 
 SPRING_ADVISOR_MAPPING_CUSTOM_0_GIT_URI="https://github.com/dashaun-tanzu/advisor-mappings.git"
 SPRING_ADVISOR_MAPPING_CUSTOM_0_GIT_PATH="mappings/"
@@ -26,23 +32,76 @@ check_dependency() {
 # Check all required dependencies
 check_dependencies() {
   local missing_deps=()
-  
+
   # Check dependencies in parallel by storing results
   check_dependency "vendir" "Please install vendir first." || missing_deps+=("vendir")
   check_dependency "http" "Please install httpie first." || missing_deps+=("httpie")
   check_dependency "bc" "Please install bc first." || missing_deps+=("bc")
   check_dependency "git" "Please install git first." || missing_deps+=("git")
-  
+  check_dependency "mvn" "Please install Maven first." || missing_deps+=("mvn")
+  check_dependency "tar" "Please install tar first." || missing_deps+=("tar")
+
   if [ ${#missing_deps[@]} -gt 0 ]; then
     echo "Missing dependencies: ${missing_deps[*]}"
     exit 1
   fi
-  
+
   echo "All dependencies found."
+}
+
+# Verify required environment variables are set
+check_env_vars() {
+  local missing_vars=()
+  [[ -z "${ADVISOR_VERSION}" ]] && missing_vars+=("ADVISOR_VERSION")
+  if [ ${#missing_vars[@]} -gt 0 ]; then
+    echo "Missing required environment variables: ${missing_vars[*]}"
+    echo "Set ADVISOR_VERSION (e.g. export ADVISOR_VERSION=1.6.2) and re-run."
+    exit 1
+  fi
+}
+
+# Resolve the advisor CLI artifact id for the current OS/arch
+advisor_artifact_id() {
+  local os arch
+  os=$(uname -s)
+  arch=$(uname -m)
+  case "$os" in
+    Darwin)
+      if [[ "$arch" == "arm64" ]]; then
+        echo "application-advisor-cli-macos-arm64"
+      else
+        echo "application-advisor-cli-macos"
+      fi
+      ;;
+    Linux)
+      echo "application-advisor-cli-linux"
+      ;;
+    MINGW*|MSYS*|CYGWIN*|Windows_NT)
+      echo "application-advisor-cli-windows"
+      ;;
+    *)
+      echo "Unsupported OS: $os" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Download the pinned advisor CLI tar via Maven and extract into the cwd.
+# Must be invoked while cwd is the upgrade-example dir.
+download_advisor() {
+  local artifact tar_file
+  artifact=$(advisor_artifact_id) || exit 1
+  tar_file="${HOME}/.m2/repository/com/vmware/tanzu/spring/${artifact}/${ADVISOR_VERSION}/${artifact}-${ADVISOR_VERSION}.tar"
+
+  displayMessage "Download Spring Application Advisor CLI ${ADVISOR_VERSION} (${artifact})"
+  pei "mvn -U -q dependency:get -Dartifact=com.vmware.tanzu.spring:${artifact}:${ADVISOR_VERSION}:tar -Dtransitive=false"
+  pei "tar -xf \"${tar_file}\" -C ."
+  pei "./cli-binary/advisor --version"
 }
 
 # Load helper functions and set initial variables
 check_dependencies
+check_env_vars
 
 vendir sync
 . ./vendir/demo-magic/demo-magic.sh
@@ -181,7 +240,7 @@ function showMemoryUsage {
 
 function advisorBuildConfig {
   displayMessage "Capture some metadata about the application with Advisor"
-  pei "advisor build-config get"
+  pei "./cli-binary/advisor build-config get"
 }
 
 function showBuildConfigKeys {
@@ -213,12 +272,12 @@ function showBuildConfigTools {
 
 function advisorUpgradePlanGet {
   displayMessage "How hard could it be to upgrade? Let's get a plan!"
-  pei "advisor upgrade-plan get"
+  pei "./cli-binary/advisor upgrade-plan get"
 }
 
 function advisorUpgradePlanApplySquash {
   displayMessage "Do all the upgrades!"
-  pei "advisor upgrade-plan apply --squash 17"
+  pei "./cli-binary/advisor upgrade-plan apply --squash 17"
 }
 
 # Display a message with a header
@@ -273,6 +332,8 @@ init
 useJava8
 talkingPoint
 cloneApp
+talkingPoint
+download_advisor
 talkingPoint
 springBootStart java8with1.5.log
 talkingPoint

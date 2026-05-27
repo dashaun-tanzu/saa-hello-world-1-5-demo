@@ -6,51 +6,38 @@
 
 # Spring Application Advisor Upgrade Example
 
-## Description
+A scripted live demo that takes a Spring Boot 1.5 / Java 8 app, uses [Spring Application Advisor](https://enterprise.spring.io/spring-application-advisor) to upgrade it to Spring Boot 4.0 / Java 21, and prints a startup-time and memory comparison table at the end.
 
-This interactive demo showcases the power of Spring Application Advisor (SAA) by automatically upgrading a Spring Boot application from version 1.5.0 to 3.5.5. The demo provides a comprehensive comparison of performance improvements achieved through modern Spring Boot versions and Java runtime upgrades.
+## What the demo does
 
-### What the Demo Does
-
-1. **Environment Setup**: Automatically configures Java 8 and Java 17 environments using SDKMAN
-2. **Baseline Measurement**: Clones and runs a Spring Boot 1.5.0 application with Java 8, measuring startup time and memory usage
-3. **Application Analysis**: Uses Spring Application Advisor to analyze the existing application, capturing:
-   - Build configuration metadata
-   - Software Bill of Materials (SBOM) with component inventory
-   - Git repository information
-   - Tool versions and dependencies
-4. **Automated Upgrade**: Generates and applies an upgrade plan that transforms the application to Spring Boot 3.5.5
-5. **Performance Validation**: Runs the upgraded application with Java 17 and measures improvements
-6. **Results Comparison**: Displays a side-by-side comparison showing:
-   - Startup time improvements
-   - Memory usage reductions
-   - Percentage improvements in both metrics
-
-### Key Benefits Demonstrated
-
-- **Zero Manual Effort**: Complete upgrade from Spring Boot 1.5 → 3.5 with no manual code changes
-- **Performance Gains**: Typically shows significant improvements in both startup speed and memory efficiency
-- **Modern Java Features**: Leverages Java 17 optimizations and Spring Boot 3.x enhancements
-- **Comprehensive Analysis**: Detailed insights into application composition and dependencies
-
-The demo is designed for live presentations and includes interactive pauses, colored output, and timing measurements to create an engaging experience that highlights the value of automated Spring Boot upgrades.
-
-## Prerequisites
-- [Spring Application Advisor](https://enterprise.spring.io/spring-application-advisor)
-  > Spring Enterprise Repository Access
-- [SDKMan](https://sdkman.io/install)
-  > i.e. `curl -s "https://get.sdkman.io" | bash`
-- [Httpie](https://httpie.io/) needs to be in the path
-  > i.e. `brew install httpie`
-- bc, pv, zip, unzip, gcc, zlib1g-dev
-  > i.e. `sudo apt install bc, pv, zip, unzip, gcc, zlib1g-dev -y`
-- [Vendir](https://carvel.dev/vendir/)
-  > i.e. `brew tap carvel-dev/carvel && brew install vendir`
+1. Clones [`dashaun/hello-spring-boot-1-5`](https://github.com/dashaun/hello-spring-boot-1-5) into `upgrade-example/`.
+2. Downloads the pinned `ADVISOR_VERSION` of the advisor CLI from the Spring Enterprise Maven repo into `upgrade-example/cli-binary/`.
+3. Runs the app on **Java 8 / Spring Boot 1.5** and records startup time and memory.
+4. Captures a build config with `advisor build-config get`, then applies an upgrade plan via `advisor upgrade-plan apply --squash 17`.
+5. Re-runs the app on **Java 21 / Spring Boot 4.0** and records metrics.
+6. Prints a colored comparison table of startup time and memory savings.
 
 ## Quick Start
+
 ```bash
+export ADVISOR_VERSION=1.6.2   # pin the Spring Application Advisor CLI version
 ./demo.sh
 ```
+
+> **Heads up:** the script kills every running `java` process on the host before starting — it assumes any JVM is a leftover Spring Boot from a prior run. Don't run it on a machine with unrelated JVMs you care about.
+
+## Prerequisites
+
+- [Spring Application Advisor](https://enterprise.spring.io/spring-application-advisor) — the demo downloads the pinned `ADVISOR_VERSION` CLI from the Spring Enterprise Maven repo per run (no system install needed), so your `~/.m2/settings.xml` must already be authenticated against that repo.
+- [SDKMAN](https://sdkman.io/install) — `curl -s "https://get.sdkman.io" | bash`. Java versions are declared in [`.sdkmanrc`](./.sdkmanrc); install missing ones with `sdk env install` from the repo root.
+- [HTTPie](https://httpie.io/) — `brew install httpie`.
+- [Vendir](https://carvel.dev/vendir/) — `brew tap carvel-dev/carvel && brew install vendir`.
+- Maven (`mvn`) and `tar` — used to fetch and extract the advisor CLI.
+- `bc`, `pv`, `zip`, `unzip`, `gcc`, `zlib1g-dev` — e.g. `sudo apt install -y bc pv zip unzip gcc zlib1g-dev` on Debian/Ubuntu.
+
+## Java Versions
+
+Java versions used by the demo are declared in [`.sdkmanrc`](./.sdkmanrc) — one `java=<version>` line per major version. `demo.sh` reads them from there at startup, and SDKMAN will also pick them up automatically if you have `sdkman_auto_env=true`. To change a Java version, edit `.sdkmanrc`; no changes to `demo.sh` are required.
 
 ## Attributions
 - [Demo Magic](https://github.com/paxtonhare/demo-magic) is pulled via `vendir sync`
